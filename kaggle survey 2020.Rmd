@@ -1,0 +1,104 @@
+---
+title: "EDA"
+author: "Minh Trung DANG"
+date: "29/12/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(data.table)
+library(DT)
+library(kableExtra)
+library(formattable)
+library(ggalluvial)
+```
+
+
+```{r}
+df <- fread("kaggle_survey_2020_responses.csv", na.strings = "", encoding = "UTF-8")
+```
+
+```{r}
+head(df)
+```
+
+
+```{r}
+df %>%
+  head(5) %>%
+  datatable()
+```
+
+```{r}
+str(df[,1:10])
+```
+
+```{r, fig.width = 10, fig.height = 5}
+df %>% 
+  group_by(Q1) %>% 
+  summarise(count = n()) %>%
+  ggplot(aes(x = Q1, y = count, fill = count)) + 
+  geom_bar(stat="identity") + 
+  geom_text(aes(label = paste0(round(count / sum(count) * 100, 2), "%")), position = position_dodge(width = 0.9), vjust = -0.5, size = 4, col = "black") +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  labs(x = "Q1", y = "Count", title = "What is your age?") +
+  scale_y_continuous(limits = c(0, 4500))
+```
+The age group of 18 to 29 years is the majority of those who access the kaggle (56.23%). Young people, I remember that time well! :P
+
+Seniors, over 50, represent 7.9% of those who use Kaggle.
+
+
+```{r}
+
+gender <- df %>% 
+  group_by(Q2) %>% 
+  summarise(count = n()) %>%
+  arrange(desc(count))
+```
+
+```{r}
+gender %>%
+  ggplot(aes(x = reorder(Q2, count), y = count)) + 
+  geom_bar(stat="identity", fill = "steelblue") + 
+  geom_text(aes(label = paste0(round(count / sum(count) * 100, 2), "%")),
+            position = position_dodge(width = 0.9), vjust = 0, hjust = 0, size = 4, col = "black") +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  labs(x = "Q2", y = "Count", title = "What is your gender?") +
+  coord_flip()+
+  scale_y_continuous(limits = c(0, 17000))
+```
+
+```{r, fig.width = 10, fig.height = 5}
+y_g <- df %>%
+  group_by(Q1, Q2) %>%
+  summarise(count = n()) %>%
+  filter(Q2 %in% c("Man","Woman")) %>%
+  mutate(freq = round(count / sum(count) * 100, 2))
+
+
+
+group.colors <- c(Woman = "#0072B2", Man = "#D55E00")
+
+y_g %>%
+  ggplot(aes(x = Q1, y = ifelse(Q2 == 'Man', count, -count), fill = Q2)) +
+  geom_bar(stat = 'identity') +
+  geom_text(aes(label = paste0(freq, "%")),  
+            vjust = 0.9, hjust = 0.5, size = 3.5, col = "black") +
+  theme_minimal() +
+  scale_y_continuous(limits = c(-1000, 3500),
+                     breaks = seq(-1000, 3500, 1000),
+                     labels = abs) +
+  labs(x = "Age", y = "Count", title = "Age | Gender", fill='Gender') +
+  scale_fill_manual(values=group.colors)
+```
+
+
+
